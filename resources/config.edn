@@ -1,6 +1,5 @@
 {:lite-crm.db/db
- {:jdbc-url #profile {:default "jdbc:sqlite:db/lite-crm.sqlite"
-                      :test "jdbc:sqlite::memory:"}}
+ {:jdbc-url "jdbc:postgresql://localhost:5432/xtdb"}
 
  :lite-crm.server/server
  {:options {:port #profile {:default 8000

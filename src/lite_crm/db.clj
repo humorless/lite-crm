@@ -1,15 +1,12 @@
 (ns lite-crm.db
+  "Manages the XTDB database connection pool via Postgres wire protocol."
   (:require [clojure.tools.logging :as log]
             [hikari-cp.core :as cp]
             [honey.sql :as honey]
             [integrant-extras.core :as ig-extras]
             [integrant.core :as ig]
             [next.jdbc :as jdbc]
-            ; Import for converting timestamp fields
-            [next.jdbc.date-time]
-            [next.jdbc.result-set :as jdbc-rs]
-            [ragtime.next-jdbc :as ragtime-jdbc]
-            [ragtime.repl :as ragtime-repl]))
+            [next.jdbc.result-set :as jdbc-rs]))
 
 ; Common functions
 
@@ -41,11 +38,7 @@
 (defmethod ig/init-key ::db
   [_ options]
   (log/info "[DB] Starting database connection pool...")
-  (let [datasource (cp/make-datasource options)]
-    (ragtime-repl/migrate
-      {:datastore (ragtime-jdbc/sql-database datasource)
-       :migrations (ragtime-jdbc/load-resources "migrations")})
-    datasource))
+  (cp/make-datasource options))
 
 (defmethod ig/halt-key! ::db
   [_ datasource]

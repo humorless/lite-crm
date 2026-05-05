@@ -1,4 +1,5 @@
 (ns lite-crm.test-utils
+  "Test helpers: fixture for table cleanup and response parsing."
   (:require [hickory.core :as hickory]
             [integrant-extras.tests :as ig-extras]
             [lite-crm.db :as db]
@@ -8,16 +9,10 @@
 (def ^:const TEST-SECRET-KEY "test-secret-key")
 
 (defn with-truncated-tables
-  "Remove all data from all tables except migrations."
+  "Delete all rows from user-managed tables between tests."
   [f]
   (let [db (::db/db ig-extras/*test-system*)]
-    (doseq [table (->> {:select [:name]
-                        :from [:sqlite_master]
-                        :where [:= :type "table"]}
-                       (db/exec! db)
-                       (map (comp keyword :name)))
-            :when (not= :ragtime_migrations table)]
-      (db/exec! db {:delete-from table}))
+    (db/exec! db {:delete-from :user})
     (f)))
 
 (defn response->hickory

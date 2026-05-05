@@ -1,0 +1,14 @@
+# docker-compose.yml
+services:
+  xtdb:
+    image: ghcr.io/xtdb/xtdb:2.1.0
+    ports:
+      - "5432:5432"   # Postgres wire protocol
+      - "3000:3000"   # HTTP healthz / metrics
+    volumes:
+      - xtdb-data:/var/lib/xtdb
+    environment:
+      XTDB_LOGGING_LEVEL: INFO
+
+volumes:
+  xtdb-data:

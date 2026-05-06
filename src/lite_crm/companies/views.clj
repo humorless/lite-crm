@@ -264,15 +264,15 @@
                         "hover:bg-gray-200"] :type "submit"} "新增"]]]))
 
 (defn info-tab-content
-  "Info tab: company fields + addresses + phones + (tags placeholder)."
-  [{:keys [router company addresses phones editing? errors]}]
+  "Info tab: company fields + addresses + phones + tags."
+  [{:keys [router company addresses phones editing? errors tags-section]}]
   [:div
    (if editing?
      (info-edit-form {:router router :company company :errors errors})
      (info-display {:router router :company company}))
    (addresses-section {:router router :company company :addresses addresses})
    (phones-section {:router router :company company :phones phones})
-   [:div {:id "tags-section" :class ["mt-6"]}]])
+   (or tags-section [:div {:id "tags-section" :class ["mt-6"]}])])
 
 (defn company-page
   "Full page: company detail with tab shell."

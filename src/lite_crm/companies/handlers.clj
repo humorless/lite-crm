@@ -7,6 +7,7 @@
             [lite-crm.logs.queries :as log-queries]
             [lite-crm.logs.views :as log-views]
             [lite-crm.routes :as-alias routes]
+            [lite-crm.tags.handlers :as tag-handlers]
             [reitit-extras.core :as ext]
             [ring.util.response :as response]))
 
@@ -69,11 +70,13 @@
         company (queries/get-company (:db context) id)]
     (case tab
       "info"
-      (let [addresses (queries/list-addresses (:db context) id)
-            phones    (queries/list-phones (:db context) id)
-            editing?  (= "true" (:editing query-params))]
+      (let [addresses    (queries/list-addresses (:db context) id)
+            phones       (queries/list-phones (:db context) id)
+            editing?     (= "true" (:editing query-params))
+            tags-section (tag-handlers/tags-section-fragment (:db context) "company" id)]
         (-> {:router router :company company
-             :addresses addresses :phones phones :editing? editing?}
+             :addresses addresses :phones phones :editing? editing?
+             :tags-section tags-section}
             (views/info-tab-content)
             (ext/render-html)))
       "contacts"
@@ -144,11 +147,13 @@
     router :reitit.core/router}]
   (let [id (get-in parameters [:path :id])]
     (if (some? errors)
-      (let [company   (queries/get-company (:db context) id)
-            addresses (queries/list-addresses (:db context) id)
-            phones    (queries/list-phones (:db context) id)]
+      (let [company      (queries/get-company (:db context) id)
+            addresses    (queries/list-addresses (:db context) id)
+            phones       (queries/list-phones (:db context) id)
+            tags-section (tag-handlers/tags-section-fragment (:db context) "company" id)]
         (-> {:router router :company (merge company (:form parameters))
-             :addresses addresses :phones phones :editing? true :errors (:humanized errors)}
+             :addresses addresses :phones phones :editing? true :errors (:humanized errors)
+             :tags-section tags-section}
             (views/info-tab-content)
             (ext/render-html)))
       (let [{:keys [industry tier notes] company-name :name} (:form parameters)]
@@ -156,10 +161,12 @@
                                                     :industry industry
                                                     :tier     tier
                                                     :notes    notes})
-        (let [company   (queries/get-company (:db context) id)
-              addresses (queries/list-addresses (:db context) id)
-              phones    (queries/list-phones (:db context) id)]
+        (let [company      (queries/get-company (:db context) id)
+              addresses    (queries/list-addresses (:db context) id)
+              phones       (queries/list-phones (:db context) id)
+              tags-section (tag-handlers/tags-section-fragment (:db context) "company" id)]
           (-> {:router router :company company
-               :addresses addresses :phones phones :editing? false}
+               :addresses addresses :phones phones :editing? false
+               :tags-section tags-section}
               (views/info-tab-content)
               (ext/render-html)))))))

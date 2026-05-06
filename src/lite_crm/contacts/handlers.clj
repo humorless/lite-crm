@@ -3,6 +3,7 @@
   (:require [lite-crm.companies.queries :as company-queries]
             [lite-crm.contacts.queries :as queries]
             [lite-crm.contacts.views :as views]
+            [lite-crm.tags.handlers :as tag-handlers]
             [reitit-extras.core :as ext]
             [ring.util.response :as response]))
 
@@ -60,11 +61,13 @@
         contact      (queries/get-contact (:db context) id)
         companies    (company-queries/list-companies (:db context) {})
         contact-logs (queries/list-logs-for-contact (:db context) id)
-        editing?     (= "true" (:editing query-params))]
+        editing?     (= "true" (:editing query-params))
+        tags-section (tag-handlers/tags-section-fragment (:db context) "contact" id)]
     (if (nil? contact)
       (response/not-found "Contact not found")
       (-> {:user user :router router :contact contact
-           :companies companies :contact-logs contact-logs :editing? editing?}
+           :companies companies :contact-logs contact-logs :editing? editing?
+           :tags-section tags-section}
           (views/contact-page)
           (ext/render-html)))))
 

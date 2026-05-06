@@ -8,6 +8,7 @@
             [lite-crm.contacts.handlers :as contact-handlers]
             [lite-crm.handlers :as handlers]
             [lite-crm.logs.handlers :as log-handlers]
+            [lite-crm.tags.handlers :as tag-handlers]
             [reitit-extras.core :as ext]
             [ring.util.response :as response]))
 
@@ -202,6 +203,25 @@
                                         [:email      {:optional true} string?]
                                         [:notes      {:optional true} string?]]}
                     :responses  {200 {:body string?}}}}]]]
+     ["/tags"
+      {:middleware [[auth-middleware/wrap-authentication auth-backend] wrap-login-required]}
+      [""  {:name ::tags
+            :post {:handler    tag-handlers/create-handler
+                   :parameters {:form [:map
+                                       [:entity-type [:enum "company" "contact"]]
+                                       [:entity-id   pos-int?]
+                                       [:name        [:string {:min 1}]]
+                                       [:reminder-date {:optional true} string?]
+                                       [:notes         {:optional true} string?]]}
+                   :responses  {200 {:body string?}}}}]
+      ["/:id"
+       {:name       ::tag
+        :parameters {:path [:map [:id pos-int?]]}
+        :delete     {:handler    tag-handlers/delete-handler
+                     :parameters {:form [:map
+                                         [:entity-type [:enum "company" "contact"]]
+                                         [:entity-id   pos-int?]]}
+                     :responses  {200 {:body string?}}}}]]
      ["/logs"
       {:middleware [[auth-middleware/wrap-authentication auth-backend]
                     wrap-login-required]}

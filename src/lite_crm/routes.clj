@@ -6,6 +6,7 @@
             [lite-crm.auth.spec :as spec]
             [lite-crm.companies.handlers :as company-handlers]
             [lite-crm.handlers :as handlers]
+            [lite-crm.logs.handlers :as log-handlers]
             [reitit-extras.core :as ext]
             [ring.util.response :as response]))
 
@@ -149,4 +150,15 @@
         {:name       ::company-phone
          :parameters {:path [:map [:id pos-int?] [:phone-id pos-int?]]}
          :delete     {:handler   company-handlers/delete-phone-handler
-                      :responses {200 {:body string?}}}}]]]]))
+                      :responses {200 {:body string?}}}}]
+       ["/logs"
+        {:name       ::company-logs
+         :parameters {:path [:map [:id pos-int?]]}
+         :post       {:handler    log-handlers/create-handler
+                      :parameters {:form [:map
+                                          [:date    [:string {:min 1}]]
+                                          [:content [:string {:min 1}]]
+                                          [:status        {:optional true} string?]
+                                          [:contact-ids   {:optional true}
+                                           [:or string? [:vector string?]]]]}
+                      :responses  {200 {:body string?}}}}]]]]))

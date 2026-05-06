@@ -2,6 +2,8 @@
   "HTTP handlers for companies list, create, and detail."
   (:require [lite-crm.companies.queries :as queries]
             [lite-crm.companies.views :as views]
+            [lite-crm.logs.queries :as log-queries]
+            [lite-crm.logs.views :as log-views]
             [lite-crm.routes :as-alias routes]
             [reitit-extras.core :as ext]
             [ring.util.response :as response]))
@@ -71,6 +73,12 @@
         (-> {:router router :company company
              :addresses addresses :phones phones :editing? editing?}
             (views/info-tab-content)
+            (ext/render-html)))
+      "logs"
+      (let [logs    (log-queries/list-logs-by-company (:db context) id)
+            company (queries/get-company (:db context) id)]
+        (-> {:router router :company company :logs logs :contacts []}
+            (log-views/logs-tab-content)
             (ext/render-html)))
       (ext/render-html [:div {:class ["py-8" "text-center" "text-gray-400"]} "即將推出"]))))
 

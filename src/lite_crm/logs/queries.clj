@@ -1,0 +1,59 @@
+(ns lite-crm.logs.queries
+  "DB queries for contact logs."
+  (:require [lite-crm.db :as db]))
+
+(def ^:private status-labels
+  {"no_answer"        "未接"
+   "answered_no_talk" "接通沒談"
+   "sent_intro"       "寄送自介信"
+   "appointment_set"  "已約訪"
+   "visited"          "已拜訪"
+   "closed"           "成交"
+   "other"            "其他"})
+
+(defn status-label [status] (get status-labels status status))
+
+(defn list-logs-by-company
+  "Return logs for a company: pinned first, then by date desc."
+  [db company-id]
+  (db/exec! db {:select   [:cl/id :cl/date :cl/content :cl/status :cl/is_pinned
+                            :cl/created_at
+                            [[:group_concat :c/name] :contact-names]]
+                :from     [[:contact_log :cl]]
+                :left-join [[:log_contact :lc] [:= :lc/log_id :cl/id]
+                             [:contact :c]     [:= :c/id :lc/contact_id]]
+                :where    [:= :cl/company_id company-id]
+                :group-by [:cl/id]
+                :order-by [[:cl/is_pinned :desc] [:cl/date :desc]]}))
+
+(defn get-log
+  "Return a single log row."
+  [db id]
+  (db/exec-one! db {:select [:*] :from [:contact_log] :where [:= :id id]}))
+
+(defn create-log!
+  "Insert a log and associate contact-ids."
+  [db {:keys [company-id date content status created-by]} contact-ids]
+  (let [log (db/exec-one! db {:insert-into :contact_log
+                               :values      [{:company_id company-id
+                                              :date       date
+                                              :content    content
+                                              :status     status
+                                              :created_by created-by}]
+                               :returning   [:*]})]
+    (when (seq contact-ids)
+      (db/exec! db {:insert-into :log_contact
+                    :values      (mapv #(hash-map :log_id (:id log) :contact_id %) contact-ids)}))
+    log))
+
+(defn toggle-pin!
+  "Flip is_pinned on a log."
+  [db id is-pinned]
+  (db/exec-one! db {:update    :contact_log
+                    :set       {:is_pinned (if is-pinned 1 0)}
+                    :where     [:= :id id]
+                    :returning [:*]}))
+
+(defn delete-log!
+  [db id]
+  (db/exec-one! db {:delete-from :contact_log :where [:= :id id]}))

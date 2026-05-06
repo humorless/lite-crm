@@ -74,6 +74,54 @@
             (ext/render-html)))
       (ext/render-html [:div {:class ["py-8" "text-center" "text-gray-400"]} "即將推出"]))))
 
+(defn create-address-handler
+  [{:keys [context parameters]
+    router :reitit.core/router}]
+  (let [id   (get-in parameters [:path :id])
+        {:keys [label address]} (:form parameters)]
+    (queries/create-address! (:db context) {:company-id id :label label :address address})
+    (let [addresses (queries/list-addresses (:db context) id)
+          company   (queries/get-company (:db context) id)]
+      (-> {:router router :company company :addresses addresses}
+          (views/addresses-section)
+          (ext/render-html)))))
+
+(defn delete-address-handler
+  [{:keys [context parameters]
+    router :reitit.core/router}]
+  (let [id      (get-in parameters [:path :id])
+        addr-id (get-in parameters [:path :addr-id])]
+    (queries/delete-address! (:db context) addr-id)
+    (let [addresses (queries/list-addresses (:db context) id)
+          company   (queries/get-company (:db context) id)]
+      (-> {:router router :company company :addresses addresses}
+          (views/addresses-section)
+          (ext/render-html)))))
+
+(defn create-phone-handler
+  [{:keys [context parameters]
+    router :reitit.core/router}]
+  (let [id  (get-in parameters [:path :id])
+        {:keys [label phone]} (:form parameters)]
+    (queries/create-phone! (:db context) {:company-id id :label label :phone phone})
+    (let [phones  (queries/list-phones (:db context) id)
+          company (queries/get-company (:db context) id)]
+      (-> {:router router :company company :phones phones}
+          (views/phones-section)
+          (ext/render-html)))))
+
+(defn delete-phone-handler
+  [{:keys [context parameters]
+    router :reitit.core/router}]
+  (let [id       (get-in parameters [:path :id])
+        phone-id (get-in parameters [:path :phone-id])]
+    (queries/delete-phone! (:db context) phone-id)
+    (let [phones  (queries/list-phones (:db context) id)
+          company (queries/get-company (:db context) id)]
+      (-> {:router router :company company :phones phones}
+          (views/phones-section)
+          (ext/render-html)))))
+
 (defn update-handler
   "PATCH /companies/:id — updates info fields, returns info tab content."
   [{:keys [context errors parameters]

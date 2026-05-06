@@ -70,3 +70,27 @@
                                                 :name "新名字" :tier "has_plan"}})]
     (is (= 200 (:status response)))
     (is (= "新名字" (:name (company-queries/get-company (utils/db) (:id company)))))))
+
+(deftest test-add-address
+  (let [user    (auth-queries/create-user! (utils/db) {:email "u@t.com" :password "password123"})
+        company (company-queries/create-company! (utils/db) {:name "台積電" :tier "no_plan"})
+        url     (str (reitit-extras/get-server-url (utils/server))
+                     "/companies/" (:id company) "/addresses")
+        response (http/post url {:cookies     (utils/auth-cookies-with-csrf user)
+                                 :form-params {reitit-extras/CSRF-TOKEN-FORM-KEY utils/TEST-CSRF-TOKEN
+                                               :address "新竹科學園區"
+                                               :label "總部"}})]
+    (is (= 200 (:status response)))
+    (is (= 1 (count (company-queries/list-addresses (utils/db) (:id company)))))))
+
+(deftest test-delete-address
+  (let [user    (auth-queries/create-user! (utils/db) {:email "u@t.com" :password "password123"})
+        company (company-queries/create-company! (utils/db) {:name "台積電" :tier "no_plan"})
+        addr    (company-queries/create-address! (utils/db) {:company-id (:id company)
+                                                              :address "新竹科學園區"})
+        url     (str (reitit-extras/get-server-url (utils/server))
+                     "/companies/" (:id company) "/addresses/" (:id addr))
+        response (http/delete url {:cookies (utils/auth-cookies-with-csrf user)
+                                   :form-params {reitit-extras/CSRF-TOKEN-FORM-KEY utils/TEST-CSRF-TOKEN}})]
+    (is (= 200 (:status response)))
+    (is (zero? (count (company-queries/list-addresses (utils/db) (:id company)))))))

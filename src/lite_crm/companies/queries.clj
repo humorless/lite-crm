@@ -67,3 +67,29 @@
                 :from     [:company_phone]
                 :where    [:= :company_id company-id]
                 :order-by [[:is_primary :desc] [:id :asc]]}))
+
+(defn create-address!
+  [db {:keys [company-id label address is-primary]}]
+  (db/exec-one! db {:insert-into :company_address
+                    :values      [{:company_id company-id
+                                   :label      label
+                                   :address    address
+                                   :is_primary (if is-primary 1 0)}]
+                    :returning   [:*]}))
+
+(defn delete-address!
+  [db id]
+  (db/exec-one! db {:delete-from :company_address :where [:= :id id]}))
+
+(defn create-phone!
+  [db {:keys [company-id label phone is-primary]}]
+  (db/exec-one! db {:insert-into :company_phone
+                    :values      [{:company_id company-id
+                                   :label      label
+                                   :phone      phone
+                                   :is_primary (if is-primary 1 0)}]
+                    :returning   [:*]}))
+
+(defn delete-phone!
+  [db id]
+  (db/exec-one! db {:delete-from :company_phone :where [:= :id id]}))

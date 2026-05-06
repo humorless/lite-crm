@@ -203,15 +203,75 @@
               :hx-swap "innerHTML"}
      "取消"]]])
 
+(defn addresses-section
+  "Renders address list + add form. Used as HTMX fragment target."
+  [{:keys [router company addresses]}]
+  (let [id (:id company)]
+    [:div {:id "addresses-section" :class ["mt-6"]}
+     [:h3 {:class ["text-sm" "font-semibold" "text-gray-600" "mb-2"]} "地址"]
+     [:ul {:class ["space-y-1" "mb-3"]}
+      (for [a addresses]
+        [:li {:class ["flex" "items-center" "justify-between" "text-sm"]}
+         [:span (when (:label a) [:span {:class ["text-gray-400" "mr-2"]} (:label a)])
+          (:address a)]
+         [:button {:class ["text-red-400" "hover:text-red-600" "text-xs" "ml-2"]
+                   :hx-delete (str (ext/get-route router ::routes/companies)
+                                   "/" id "/addresses/" (:id a))
+                   :hx-headers (ext/csrf-token-json)
+                   :hx-target "#addresses-section"
+                   :hx-swap "outerHTML"
+                   :hx-confirm "確定刪除此地址？"} "移除"]])]
+     [:form {:class ["flex" "gap-2" "items-end"]
+             :hx-post (str (ext/get-route router ::routes/companies) "/" id "/addresses")
+             :hx-target "#addresses-section"
+             :hx-swap "outerHTML"}
+      (ext/csrf-token-html)
+      [:input {:class ["border" "border-gray-300" "rounded" "px-2" "py-1" "text-xs" "w-20"]
+               :type "text" :name "label" :placeholder "標籤"}]
+      [:input {:class ["border" "border-gray-300" "rounded" "px-2" "py-1" "text-xs" "flex-1"]
+               :type "text" :name "address" :placeholder "地址" :required true}]
+      [:button {:class ["bg-gray-100" "text-gray-700" "px-2" "py-1" "rounded" "text-xs"
+                        "hover:bg-gray-200"] :type "submit"} "新增"]]]))
+
+(defn phones-section
+  "Renders phone list + add form."
+  [{:keys [router company phones]}]
+  (let [id (:id company)]
+    [:div {:id "phones-section" :class ["mt-4"]}
+     [:h3 {:class ["text-sm" "font-semibold" "text-gray-600" "mb-2"]} "電話"]
+     [:ul {:class ["space-y-1" "mb-3"]}
+      (for [p phones]
+        [:li {:class ["flex" "items-center" "justify-between" "text-sm"]}
+         [:span (when (:label p) [:span {:class ["text-gray-400" "mr-2"]} (:label p)])
+          (:phone p)]
+         [:button {:class ["text-red-400" "hover:text-red-600" "text-xs" "ml-2"]
+                   :hx-delete (str (ext/get-route router ::routes/companies)
+                                   "/" id "/phones/" (:id p))
+                   :hx-headers (ext/csrf-token-json)
+                   :hx-target "#phones-section"
+                   :hx-swap "outerHTML"
+                   :hx-confirm "確定刪除此電話？"} "移除"]])]
+     [:form {:class ["flex" "gap-2" "items-end"]
+             :hx-post (str (ext/get-route router ::routes/companies) "/" id "/phones")
+             :hx-target "#phones-section"
+             :hx-swap "outerHTML"}
+      (ext/csrf-token-html)
+      [:input {:class ["border" "border-gray-300" "rounded" "px-2" "py-1" "text-xs" "w-20"]
+               :type "text" :name "label" :placeholder "標籤"}]
+      [:input {:class ["border" "border-gray-300" "rounded" "px-2" "py-1" "text-xs" "flex-1"]
+               :type "text" :name "phone" :placeholder "電話" :required true}]
+      [:button {:class ["bg-gray-100" "text-gray-700" "px-2" "py-1" "rounded" "text-xs"
+                        "hover:bg-gray-200"] :type "submit"} "新增"]]]))
+
 (defn info-tab-content
   "Info tab: company fields + addresses + phones + (tags placeholder)."
-  [{:keys [router company _addresses _phones editing? errors]}]
+  [{:keys [router company addresses phones editing? errors]}]
   [:div
    (if editing?
      (info-edit-form {:router router :company company :errors errors})
      (info-display {:router router :company company}))
-   [:div {:id "addresses-section" :class ["mt-6"]}]
-   [:div {:id "phones-section" :class ["mt-4"]}]
+   (addresses-section {:router router :company company :addresses addresses})
+   (phones-section {:router router :company company :phones phones})
    [:div {:id "tags-section" :class ["mt-6"]}]])
 
 (defn company-page

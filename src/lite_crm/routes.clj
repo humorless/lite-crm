@@ -123,4 +123,30 @@
         {:name       ::company-tab
          :parameters {:path [:map [:id pos-int?] [:tab string?]]}
          :get        {:handler   company-handlers/tab-handler
+                      :responses {200 {:body string?}}}}]
+       ["/addresses"
+        {:name       ::company-addresses
+         :parameters {:path [:map [:id pos-int?]]}
+         :post       {:handler    company-handlers/create-address-handler
+                      :parameters {:form [:map
+                                          [:address [:string {:min 1}]]
+                                          [:label {:optional true} string?]]}
+                      :responses  {200 {:body string?}}}}]
+       ["/addresses/:addr-id"
+        {:name       ::company-address
+         :parameters {:path [:map [:id pos-int?] [:addr-id pos-int?]]}
+         :delete     {:handler   company-handlers/delete-address-handler
+                      :responses {200 {:body string?}}}}]
+       ["/phones"
+        {:name       ::company-phones
+         :parameters {:path [:map [:id pos-int?]]}
+         :post       {:handler    company-handlers/create-phone-handler
+                      :parameters {:form [:map
+                                          [:phone [:string {:min 1}]]
+                                          [:label {:optional true} string?]]}
+                      :responses  {200 {:body string?}}}}]
+       ["/phones/:phone-id"
+        {:name       ::company-phone
+         :parameters {:path [:map [:id pos-int?] [:phone-id pos-int?]]}
+         :delete     {:handler   company-handlers/delete-phone-handler
                       :responses {200 {:body string?}}}}]]]]))

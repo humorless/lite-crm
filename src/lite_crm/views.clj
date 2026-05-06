@@ -83,9 +83,62 @@
      [:main {:class ["container" "mx-auto" "px-4" "py-6" "max-w-6xl"]}
       content]]))
 
+(defn- reminder-urgency-badge [reminder-date]
+  (let [today    (.toString (java.time.LocalDate/now))
+        overdue? (neg? (compare reminder-date today))]
+    (if overdue?
+      [:span {:class ["inline-flex" "items-center" "px-2" "py-0.5" "rounded" "text-xs"
+                      "font-medium" "bg-red-100" "text-red-700"]} "逾期"]
+      [:span {:class ["inline-flex" "items-center" "px-2" "py-0.5" "rounded" "text-xs"
+                      "font-medium" "bg-yellow-100" "text-yellow-700"]} "即將到期"])))
+
 (defn home-page
-  [context]
-  (layout context
-    [:div {:class ["py-10" "text-center"]}
-     [:h1 {:class ["text-2xl" "font-bold" "text-gray-700"]} "CRM 總覽"]
-     [:p {:class ["text-gray-400" "mt-2" "text-sm"]} "Dashboard 即將建置"]]))
+  [{:keys [reminders recent-logs] :as data}]
+  (layout data
+    [:div
+     [:h1 {:class ["text-2xl" "font-bold" "text-gray-800" "mb-6"]} "儀表板"]
+     [:div {:class ["grid" "grid-cols-2" "gap-6"]}
+      [:div {:class ["bg-white" "rounded-lg" "shadow" "p-6"]}
+       [:h2 {:class ["text-sm" "font-semibold" "text-gray-600" "mb-4" "uppercase"
+                     "tracking-wide"]} "提醒事項（30 天內）"]
+       (if (seq reminders)
+         [:ul {:class ["space-y-3"]}
+          (for [r reminders]
+            [:li {:class ["flex" "items-start" "gap-3" "border-t" "border-gray-100" "pt-3"]}
+             [:div {:class ["flex-1"]}
+              [:div {:class ["flex" "items-center" "gap-2" "mb-1"]}
+               (reminder-urgency-badge (:reminder-date r))
+               [:span {:class ["text-xs" "text-gray-400"]} (:reminder-date r)]]
+              [:p {:class ["text-sm" "font-medium" "text-gray-800"]}
+               (if (= "company" (:entity-type r))
+                 [:a {:class ["hover:text-indigo-600"]
+                      :href (str "/companies/" (:entity-id r))}
+                  (:company-name r)]
+                 [:a {:class ["hover:text-indigo-600"]
+                      :href (str "/contacts/" (:entity-id r))}
+                  (:contact-name r)])]
+              [:div {:class ["flex" "items-center" "gap-2"]}
+               [:span {:class ["bg-indigo-50" "text-indigo-700" "px-2" "py-0.5" "rounded-full"
+                               "text-xs"]} (:name r)]
+               (when (:notes r)
+                 [:span {:class ["text-xs" "text-gray-400"]} (:notes r)])]]])]
+         [:p {:class ["text-sm" "text-gray-400" "text-center" "py-4"]} "目前無提醒"])]
+      [:div {:class ["bg-white" "rounded-lg" "shadow" "p-6"]}
+       [:h2 {:class ["text-sm" "font-semibold" "text-gray-600" "mb-4" "uppercase"
+                     "tracking-wide"]} "最近聯絡記錄"]
+       (if (seq recent-logs)
+         [:ul {:class ["space-y-3"]}
+          (for [log recent-logs]
+            [:li {:class ["border-t" "border-gray-100" "pt-3"]}
+             [:div {:class ["flex" "items-center" "gap-2" "mb-1"]}
+              [:a {:class ["text-sm" "font-medium" "text-indigo-600" "hover:underline"]
+                   :href (str "/companies/" (:company-id log))}
+               (:company-name log)]
+              [:span {:class ["text-xs" "text-gray-400"]} (:date log)]
+              (when (:contact-names log)
+                [:span {:class ["text-xs" "text-gray-500"]} (:contact-names log)])]
+             [:p {:class ["text-sm" "text-gray-700"]}
+              (let [c (:content log)]
+                (if (> (count c) 80) (str (subs c 0 80) "…") c))]])]
+         [:p {:class ["text-sm" "text-gray-400" "text-center" "py-4"]} "尚無記錄"])]]]
+   ))

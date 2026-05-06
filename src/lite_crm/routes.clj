@@ -36,10 +36,11 @@
 
 (def routes
   (let [auth-backend (backends/session)]
-    [["/" {:name ::home
-           :middleware [[auth-middleware/wrap-authentication auth-backend]]
-           :get {:handler handlers/home-handler}
-           :responses {200 {:body string?}}}]
+    [["/"
+      {:middleware [[auth-middleware/wrap-authentication auth-backend] wrap-login-required]}
+      ["" {:name ::home
+           :get  {:handler   handlers/home-handler
+                  :responses {200 {:body string?}}}}]]
      ["/health" {:name ::health
                  :get {:handler (fn [_] (response/response "OK"))}}]
      ["/auth"

@@ -18,7 +18,7 @@
         user (queries/create-user! (test-utils/db) {:email "u@t.com" :password "password123"})
         body (test-utils/response->hickory
                (http/get url {:cookies (test-utils/auth-cookies user)}))]
-    (is (= "CRM 總覽"
+    (is (= "儀表板"
            (->> body
                 (select/select (select/tag :h1))
                 first :content first)))))

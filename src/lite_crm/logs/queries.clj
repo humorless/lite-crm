@@ -57,3 +57,17 @@
 (defn delete-log!
   [db id]
   (db/exec-one! db {:delete-from :contact_log :where [:= :id id]}))
+
+(defn list-recent-logs
+  "Last 20 logs across all companies, newest first."
+  [db]
+  (db/exec! db {:select   [:cl/id :cl/date :cl/content :cl/status :cl/is_pinned
+                            [:co/id :company-id] [:co/name :company-name]
+                            [[:group_concat :c/name] :contact-names]]
+                :from     [[:contact_log :cl]]
+                :join     [[:company :co] [:= :co/id :cl/company_id]]
+                :left-join [[:log_contact :lc] [:= :lc/log_id :cl/id]
+                             [:contact :c]     [:= :c/id :lc/contact_id]]
+                :group-by [:cl/id]
+                :order-by [[:cl/date :desc]]
+                :limit    20}))

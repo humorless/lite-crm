@@ -226,6 +226,9 @@
      ["/logs"
       {:middleware [[auth-middleware/wrap-authentication auth-backend]
                     wrap-login-required]}
+      ["" {:name ::logs
+           :get  {:handler   log-handlers/ledger-handler
+                  :responses {200 {:body string?}}}}]
       ["/:id"
        {:name       ::log
         :parameters {:path [:map [:id pos-int?]]}

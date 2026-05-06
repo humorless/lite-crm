@@ -58,6 +58,28 @@
   [db id]
   (db/exec-one! db {:delete-from :contact_log :where [:= :id id]}))
 
+(defn list-all-logs
+  "Return all logs with optional filters."
+  [db {:keys [status company-name contact-name date-from date-to pinned-only?]}]
+  (let [wheres (cond-> []
+                 status       (conj [:= :cl/status status])
+                 company-name (conj [:like :co/name (str "%" company-name "%")])
+                 contact-name (conj [:like :c/name (str "%" contact-name "%")])
+                 date-from    (conj [:>= :cl/date date-from])
+                 date-to      (conj [:<= :cl/date date-to])
+                 pinned-only? (conj [:= :cl/is_pinned 1]))
+        query  {:select    [:cl/id :cl/date :cl/content :cl/status :cl/is_pinned
+                             [:co/id :company-id] [:co/name :company-name]
+                             [[:group_concat [:distinct :c/name]] :contact-names]]
+                :from      [[:contact_log :cl]]
+                :join      [[:company :co] [:= :co/id :cl/company_id]]
+                :left-join [[:log_contact :lc] [:= :lc/log_id :cl/id]
+                             [:contact :c]     [:= :c/id :lc/contact_id]]
+                :group-by  [:cl/id]
+                :order-by  [[:cl/is_pinned :desc] [:cl/date :desc]]}
+        query  (if (seq wheres) (assoc query :where (into [:and] wheres)) query)]
+    (db/exec! db query)))
+
 (defn list-recent-logs
   "Last 20 logs across all companies, newest first."
   [db]

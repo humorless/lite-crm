@@ -1,6 +1,7 @@
 (ns lite-crm.logs.views
   "Hiccup views for contact logs."
   (:require [lite-crm.logs.queries :as queries]
+            [lite-crm.views :as base]
             [reitit-extras.core :as ext]))
 
 (defn- status-badge [status]
@@ -107,3 +108,85 @@
      "+ 新增記錄"]]
    (add-log-form {:company-id (:id company) :contacts contacts})
    (logs-list-fragment {:logs logs})])
+
+(defn- status-options []
+  [["" "（全部狀態）"]
+   ["no_answer"        "未接"]
+   ["answered_no_talk" "接通沒談"]
+   ["sent_intro"       "寄送自介信"]
+   ["appointment_set"  "已約訪"]
+   ["visited"          "已拜訪"]
+   ["closed"           "成交"]
+   ["other"            "其他"]])
+
+(defn ledger-page
+  "Full page: global filterable log ledger."
+  [{:keys [logs filters] :as data}]
+  (base/layout data
+    [:div
+     [:h1 {:class ["text-2xl" "font-bold" "text-gray-800" "mb-6"]} "聯絡記錄總覽"]
+     [:form {:class ["bg-white" "rounded-lg" "shadow" "p-4" "mb-6"
+                     "flex" "gap-3" "items-end" "flex-wrap"]
+             :method "get" :action "/logs"}
+      [:div
+       [:label {:class ["block" "text-xs" "text-gray-500" "mb-1"]} "狀態"]
+       [:select {:class ["border" "border-gray-300" "rounded" "px-2" "py-1" "text-sm"]
+                 :name "status"}
+        (for [[v l] (status-options)]
+          [:option {:value v :selected (= v (:status filters))} l])]]
+      [:div
+       [:label {:class ["block" "text-xs" "text-gray-500" "mb-1"]} "公司"]
+       [:input {:class ["border" "border-gray-300" "rounded" "px-2" "py-1" "text-sm"]
+                :type "text" :name "company-name" :placeholder "公司名稱"
+                :value (or (:company-name filters) "")}]]
+      [:div
+       [:label {:class ["block" "text-xs" "text-gray-500" "mb-1"]} "聯絡人"]
+       [:input {:class ["border" "border-gray-300" "rounded" "px-2" "py-1" "text-sm"]
+                :type "text" :name "contact-name" :placeholder "姓名"
+                :value (or (:contact-name filters) "")}]]
+      [:div
+       [:label {:class ["block" "text-xs" "text-gray-500" "mb-1"]} "開始日期"]
+       [:input {:class ["border" "border-gray-300" "rounded" "px-2" "py-1" "text-sm"]
+                :type "date" :name "date-from" :value (or (:date-from filters) "")}]]
+      [:div
+       [:label {:class ["block" "text-xs" "text-gray-500" "mb-1"]} "結束日期"]
+       [:input {:class ["border" "border-gray-300" "rounded" "px-2" "py-1" "text-sm"]
+                :type "date" :name "date-to" :value (or (:date-to filters) "")}]]
+      [:div {:class ["flex" "items-center" "gap-1" "pb-1"]}
+       [:input {:type "checkbox" :name "pinned-only" :value "true" :id "pinned-only"
+                :checked (= "true" (:pinned-only filters))}]
+       [:label {:class ["text-sm" "text-gray-600"] :for "pinned-only"} "只看置頂"]]
+      [:button {:class ["bg-indigo-600" "text-white" "px-3" "py-1.5" "rounded" "text-sm"
+                        "hover:bg-indigo-700"] :type "submit"} "篩選"]
+      [:a {:class ["text-sm" "text-gray-400" "hover:text-gray-600" "pb-1"] :href "/logs"} "清除"]]
+     [:div {:class ["bg-white" "rounded-lg" "shadow" "overflow-hidden"]}
+      [:table {:class ["min-w-full"]}
+       [:thead {:class ["bg-gray-50" "border-b" "border-gray-200"]}
+        [:tr
+         (for [h ["日期" "公司" "聯絡人" "狀態" "內容" "置頂" ""]]
+           [:th {:class ["px-4" "py-3" "text-left" "text-xs" "font-medium"
+                         "text-gray-500" "uppercase" "tracking-wide"]} h])]]
+       [:tbody {:class ["divide-y" "divide-gray-100"]}
+        (if (seq logs)
+          (for [log logs]
+            [:tr {:class ["hover:bg-gray-50"]}
+             [:td {:class ["px-4" "py-3" "text-sm" "text-gray-600" "whitespace-nowrap"]}
+              (:date log)]
+             [:td {:class ["px-4" "py-3" "text-sm"]}
+              [:a {:class ["text-indigo-600" "hover:underline"]
+                   :href (str "/companies/" (:company-id log))}
+               (:company-name log)]]
+             [:td {:class ["px-4" "py-3" "text-sm" "text-gray-600"]}
+              (or (:contact-names log) "—")]
+             [:td {:class ["px-4" "py-3"]}
+              (when (:status log) (status-badge (:status log)))]
+             [:td {:class ["px-4" "py-3" "text-sm" "text-gray-700" "max-w-xs" "truncate"]}
+              (:content log)]
+             [:td {:class ["px-4" "py-3" "text-center"]}
+              (when (pos? (:is-pinned log)) [:span {:class ["text-orange-500"]} "📌"])]
+             [:td {:class ["px-4" "py-3" "text-right"]}
+              [:a {:class ["text-xs" "text-gray-400" "hover:text-indigo-600"]
+                   :href (str "/companies/" (:company-id log) "#logs")}
+               "查看"]]])
+          [:tr [:td {:class ["px-4" "py-8" "text-center" "text-gray-400"] :colspan 7}
+                "尚無記錄"]])]]]]))

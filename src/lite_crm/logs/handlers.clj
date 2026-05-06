@@ -30,6 +30,22 @@
           (views/logs-list-fragment)
           (ext/render-html)))))
 
+(defn ledger-handler
+  "GET /logs — global filterable log ledger."
+  [{:keys [context query-params]
+    user   :identity
+    router :reitit.core/router}]
+  (let [filters {:status       (not-empty (:status query-params))
+                 :company-name (not-empty (:company-name query-params))
+                 :contact-name (not-empty (:contact-name query-params))
+                 :date-from    (not-empty (:date-from query-params))
+                 :date-to      (not-empty (:date-to query-params))
+                 :pinned-only? (= "true" (:pinned-only query-params))}
+        logs    (queries/list-all-logs (:db context) filters)]
+    (-> {:user user :router router :logs logs :filters query-params}
+        (views/ledger-page)
+        (ext/render-html))))
+
 (defn create-handler
   "POST /companies/:id/logs"
   [{:keys [context parameters]

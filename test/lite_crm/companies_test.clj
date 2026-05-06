@@ -46,3 +46,27 @@
     (is (= 200 (:status response)))
     (is (nil? (get (:headers response) "HX-Redirect")))
     (is (zero? (count (company-queries/list-companies (utils/db) {}))))))
+
+(deftest test-company-detail-requires-auth
+  (let [company  (company-queries/create-company! (utils/db) {:name "測試公司" :tier "no_plan"})
+        url      (str (reitit-extras/get-server-url (utils/server)) "/companies/" (:id company))
+        response (http/get url {:redirect-strategy :none})]
+    (is (= 302 (:status response)))))
+
+(deftest test-company-detail-shows-name
+  (let [user    (auth-queries/create-user! (utils/db) {:email "u@t.com" :password "password123"})
+        company (company-queries/create-company! (utils/db) {:name "台積電" :tier "has_plan"})
+        url     (str (reitit-extras/get-server-url (utils/server)) "/companies/" (:id company))
+        body    (utils/response->hickory (http/get url {:cookies (utils/auth-cookies user)}))]
+    (is (some #(= ["台積電"] (:content %))
+              (select/select (select/tag :h1) body)))))
+
+(deftest test-update-company-info
+  (let [user    (auth-queries/create-user! (utils/db) {:email "u@t.com" :password "password123"})
+        company (company-queries/create-company! (utils/db) {:name "舊名字" :tier "no_plan"})
+        url     (str (reitit-extras/get-server-url (utils/server)) "/companies/" (:id company))
+        response (http/patch url {:cookies     (utils/auth-cookies-with-csrf user)
+                                  :form-params {reitit-extras/CSRF-TOKEN-FORM-KEY utils/TEST-CSRF-TOKEN
+                                                :name "新名字" :tier "has_plan"}})]
+    (is (= 200 (:status response)))
+    (is (= "新名字" (:name (company-queries/get-company (utils/db) (:id company)))))))

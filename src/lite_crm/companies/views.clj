@@ -119,3 +119,111 @@
     [:div
      [:h1 {:class ["text-2xl" "font-bold" "text-gray-800" "mb-6"]} "新增公司"]
      (new-company-form data)]))
+
+(defn tab-nav
+  "Tab switching buttons. Alpine.js tracks activeTab; HTMX fetches content."
+  [{:keys [router company]}]
+  (let [id (:id company)]
+    [:div {:x-data "{ activeTab: 'info' }"
+           :class ["border-b" "border-gray-200" "mb-6"]}
+     [:div {:class ["flex" "gap-1"]}
+      (for [[tab label] [["info" "資訊"] ["contacts" "聯絡人"] ["logs" "聯絡記錄"]]]
+        [:button {:class ["px-4" "py-2" "text-sm" "font-medium" "border-b-2" "-mb-px"
+                          "transition-colors"]
+                  :x-bind:class (str "activeTab === '" tab
+                                     "' ? 'border-indigo-500 text-indigo-600'"
+                                     " : 'border-transparent text-gray-500 hover:text-gray-700'")
+                  :x-on:click (str "activeTab = '" tab "'")
+                  :hx-get (str (ext/get-route router ::routes/companies) "/" id "/tabs/" tab)
+                  :hx-target "#tab-content"
+                  :hx-swap "innerHTML"}
+         label])]]))
+
+(defn info-display
+  "Read-only view of company info with Edit button."
+  [{:keys [router company]}]
+  (let [id (:id company)]
+    [:div {:id "info-section"}
+     [:div {:class ["grid" "grid-cols-2" "gap-4" "mb-4"]}
+      [:div
+       [:p {:class ["text-xs" "text-gray-400" "uppercase" "tracking-wide"]} "公司名稱"]
+       [:p {:class ["font-medium" "text-gray-800"]} (:name company)]]
+      [:div
+       [:p {:class ["text-xs" "text-gray-400" "uppercase" "tracking-wide"]} "產業"]
+       [:p {:class ["text-gray-700"]} (or (:industry company) "—")]]
+      [:div
+       [:p {:class ["text-xs" "text-gray-400" "uppercase" "tracking-wide"]} "客戶等級"]
+       (tier-badge (:tier company))]
+      [:div
+       [:p {:class ["text-xs" "text-gray-400" "uppercase" "tracking-wide"]} "備註"]
+       [:p {:class ["text-gray-700" "text-sm"]} (or (:notes company) "—")]]]
+     [:button {:class ["text-sm" "text-indigo-600" "hover:underline"]
+               :hx-get (str (ext/get-route router ::routes/companies) "/" id "/tabs/info?editing=true")
+               :hx-target "#tab-content"
+               :hx-swap "innerHTML"}
+      "編輯"]]))
+
+(defn info-edit-form
+  "Editable form for company info."
+  [{:keys [router company errors]}]
+  [:form {:id "info-section"
+          :hx-patch (str (ext/get-route router ::routes/companies) "/" (:id company))
+          :hx-target "#tab-content"
+          :hx-swap "innerHTML"
+          :class ["space-y-4"]}
+   (ext/csrf-token-html)
+   [:div {:class ["grid" "grid-cols-2" "gap-4"]}
+    [:div
+     [:label {:class ["block" "text-xs" "text-gray-500" "mb-1"]} "公司名稱 *"]
+     [:input {:class ["w-full" "border" "border-gray-300" "rounded" "px-2" "py-1" "text-sm"]
+              :type "text" :name "name" :value (:name company) :required true}]
+     (for [e (:name errors)] [:p {:class ["text-red-500" "text-xs"]} e])]
+    [:div
+     [:label {:class ["block" "text-xs" "text-gray-500" "mb-1"]} "產業"]
+     [:input {:class ["w-full" "border" "border-gray-300" "rounded" "px-2" "py-1" "text-sm"]
+              :type "text" :name "industry" :value (or (:industry company) "")}]]
+    [:div
+     [:label {:class ["block" "text-xs" "text-gray-500" "mb-1"]} "客戶等級"]
+     [:select {:class ["w-full" "border" "border-gray-300" "rounded" "px-2" "py-1" "text-sm"]
+               :name "tier"}
+      (for [[tier-val label] tier-labels]
+        [:option {:value tier-val :selected (= tier-val (:tier company))} label])]]
+    [:div
+     [:label {:class ["block" "text-xs" "text-gray-500" "mb-1"]} "備註"]
+     [:textarea {:class ["w-full" "border" "border-gray-300" "rounded" "px-2" "py-1" "text-sm"]
+                 :name "notes" :rows 2} (or (:notes company) "")]]]
+   [:div {:class ["flex" "gap-2"]}
+    [:button {:class ["bg-indigo-600" "text-white" "px-3" "py-1.5" "rounded" "text-sm"
+                      "hover:bg-indigo-700"] :type "submit"} "儲存"]
+    [:button {:class ["border" "border-gray-300" "text-gray-600" "px-3" "py-1.5" "rounded"
+                      "text-sm" "hover:bg-gray-50"]
+              :type "button"
+              :hx-get (str (ext/get-route router ::routes/companies) "/" (:id company) "/tabs/info")
+              :hx-target "#tab-content"
+              :hx-swap "innerHTML"}
+     "取消"]]])
+
+(defn info-tab-content
+  "Info tab: company fields + addresses + phones + (tags placeholder)."
+  [{:keys [router company _addresses _phones editing? errors]}]
+  [:div
+   (if editing?
+     (info-edit-form {:router router :company company :errors errors})
+     (info-display {:router router :company company}))
+   [:div {:id "addresses-section" :class ["mt-6"]}]
+   [:div {:id "phones-section" :class ["mt-4"]}]
+   [:div {:id "tags-section" :class ["mt-6"]}]])
+
+(defn company-page
+  "Full page: company detail with tab shell."
+  [{:keys [router company] :as data}]
+  (base/layout data
+    [:div
+     [:div {:class ["flex" "items-center" "gap-3" "mb-6"]}
+      [:a {:class ["text-sm" "text-gray-400" "hover:text-gray-600"]
+           :href (ext/get-route router ::routes/companies)} "← 公司列表"]
+      [:h1 {:class ["text-2xl" "font-bold" "text-gray-800"]} (:name company)]
+      (tier-badge (:tier company))]
+     (tab-nav {:router router :company company})
+     [:div {:id "tab-content"}
+      (info-tab-content (assoc data :editing? false))]]))

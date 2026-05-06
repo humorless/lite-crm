@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS company_address (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_id INTEGER NOT NULL REFERENCES company(id) ON DELETE CASCADE,
+  label      TEXT,
+  address    TEXT NOT NULL,
+  is_primary INTEGER NOT NULL DEFAULT 0
+);

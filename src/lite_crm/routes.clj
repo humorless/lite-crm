@@ -102,6 +102,25 @@
                                            [:tier {:optional true} string?]
                                            [:notes {:optional true} string?]]}
                        :responses  {200 {:body string?}}}}]
-      ["/new" {:name     ::new-company
-               :get      {:handler   company-handlers/new-handler
-                          :responses {200 {:body string?}}}}]]]))
+      ["/new" {:name        ::new-company
+               :conflicting true
+               :get         {:handler   company-handlers/new-handler
+                             :responses {200 {:body string?}}}}]
+      ["/:id"
+       {:conflicting true
+        :parameters  {:path [:map [:id pos-int?]]}}
+       ["" {:name  ::company
+            :get   {:handler   company-handlers/detail-handler
+                    :responses {200 {:body string?}}}
+            :patch {:handler    company-handlers/update-handler
+                    :parameters {:form [:map
+                                        [:name {:optional true} [:string {:min 1}]]
+                                        [:industry {:optional true} string?]
+                                        [:tier {:optional true} string?]
+                                        [:notes {:optional true} string?]]}
+                    :responses  {200 {:body string?}}}}]
+       ["/tabs/:tab"
+        {:name       ::company-tab
+         :parameters {:path [:map [:id pos-int?] [:tab string?]]}
+         :get        {:handler   company-handlers/tab-handler
+                      :responses {200 {:body string?}}}}]]]]))

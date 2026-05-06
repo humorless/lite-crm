@@ -36,3 +36,34 @@
                                    :tier     (or tier "no_plan")
                                    :notes    notes}]
                     :returning   [:*]}))
+
+(defn get-company
+  "Return a single company by id, or nil."
+  [db id]
+  (db/exec-one! db {:select [:*] :from [:company] :where [:= :id id]}))
+
+(defn update-company!
+  "Update company fields. Returns updated row."
+  [db id {:keys [industry tier notes] company-name :name}]
+  (db/exec-one! db {:update    :company
+                    :set       (cond-> {:updated_at [:raw "CURRENT_TIMESTAMP"]}
+                                 company-name (assoc :name company-name)
+                                 industry     (assoc :industry industry)
+                                 tier         (assoc :tier tier)
+                                 notes        (assoc :notes notes))
+                    :where     [:= :id id]
+                    :returning [:*]}))
+
+(defn list-addresses
+  [db company-id]
+  (db/exec! db {:select   [:*]
+                :from     [:company_address]
+                :where    [:= :company_id company-id]
+                :order-by [[:is_primary :desc] [:id :asc]]}))
+
+(defn list-phones
+  [db company-id]
+  (db/exec! db {:select   [:*]
+                :from     [:company_phone]
+                :where    [:= :company_id company-id]
+                :order-by [[:is_primary :desc] [:id :asc]]}))

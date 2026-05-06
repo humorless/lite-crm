@@ -1,5 +1,5 @@
 (ns lite-crm.companies.handlers
-  "HTTP handlers for companies list and create."
+  "HTTP handlers for companies list, create, and detail."
   (:require [lite-crm.companies.queries :as queries]
             [lite-crm.companies.views :as views]
             [lite-crm.routes :as-alias routes]
@@ -40,3 +40,62 @@
                                                :notes    notes})
       (-> (ext/render-html [:div])
           (response/header "HX-Redirect" (ext/get-route router ::routes/companies))))))
+
+(defn detail-handler
+  [{:keys [context parameters]
+    user   :identity
+    router :reitit.core/router}]
+  (let [id      (get-in parameters [:path :id])
+        company (queries/get-company (:db context) id)]
+    (if (nil? company)
+      (response/not-found "Company not found")
+      (let [addresses (queries/list-addresses (:db context) id)
+            phones    (queries/list-phones (:db context) id)]
+        (-> {:user user :router router :company company
+             :addresses addresses :phones phones}
+            (views/company-page)
+            (ext/render-html))))))
+
+(defn tab-handler
+  "Returns tab content fragment for HTMX tab switching."
+  [{:keys [context parameters query-params]
+    router :reitit.core/router}]
+  (let [id      (get-in parameters [:path :id])
+        tab     (get-in parameters [:path :tab])
+        company (queries/get-company (:db context) id)]
+    (case tab
+      "info"
+      (let [addresses (queries/list-addresses (:db context) id)
+            phones    (queries/list-phones (:db context) id)
+            editing?  (= "true" (:editing query-params))]
+        (-> {:router router :company company
+             :addresses addresses :phones phones :editing? editing?}
+            (views/info-tab-content)
+            (ext/render-html)))
+      (ext/render-html [:div {:class ["py-8" "text-center" "text-gray-400"]} "即將推出"]))))
+
+(defn update-handler
+  "PATCH /companies/:id — updates info fields, returns info tab content."
+  [{:keys [context errors parameters]
+    router :reitit.core/router}]
+  (let [id (get-in parameters [:path :id])]
+    (if (some? errors)
+      (let [company   (queries/get-company (:db context) id)
+            addresses (queries/list-addresses (:db context) id)
+            phones    (queries/list-phones (:db context) id)]
+        (-> {:router router :company (merge company (:form parameters))
+             :addresses addresses :phones phones :editing? true :errors (:humanized errors)}
+            (views/info-tab-content)
+            (ext/render-html)))
+      (let [{:keys [industry tier notes] company-name :name} (:form parameters)]
+        (queries/update-company! (:db context) id {:name     company-name
+                                                    :industry industry
+                                                    :tier     tier
+                                                    :notes    notes})
+        (let [company   (queries/get-company (:db context) id)
+              addresses (queries/list-addresses (:db context) id)
+              phones    (queries/list-phones (:db context) id)]
+          (-> {:router router :company company
+               :addresses addresses :phones phones :editing? false}
+              (views/info-tab-content)
+              (ext/render-html)))))))

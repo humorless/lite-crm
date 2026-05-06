@@ -4,6 +4,7 @@
             [buddy.auth.middleware :as auth-middleware]
             [lite-crm.auth.handlers :as auth-handlers]
             [lite-crm.auth.spec :as spec]
+            [lite-crm.companies.handlers :as company-handlers]
             [lite-crm.handlers :as handlers]
             [reitit-extras.core :as ext]
             [ring.util.response :as response]))
@@ -87,4 +88,20 @@
                                                       [:current-password [:string {:min 1}]]
                                                       [:new-password [:string {:min 8}]]
                                                       [:confirm-new-password [:string {:min 8}]]]}
-                                  :responses {200 {:body string?}}}}]]]))
+                                  :responses {200 {:body string?}}}}]]
+     ["/companies"
+      {:middleware [[auth-middleware/wrap-authentication auth-backend]
+                    wrap-login-required]}
+      ["" {:name      ::companies
+           :get       {:handler   company-handlers/list-handler
+                       :responses {200 {:body string?}}}
+           :post      {:handler    company-handlers/create-handler
+                       :parameters {:form [:map
+                                           [:name [:string {:min 1}]]
+                                           [:industry {:optional true} string?]
+                                           [:tier {:optional true} string?]
+                                           [:notes {:optional true} string?]]}
+                       :responses  {200 {:body string?}}}}]
+      ["/new" {:name     ::new-company
+               :get      {:handler   company-handlers/new-handler
+                          :responses {200 {:body string?}}}}]]]))

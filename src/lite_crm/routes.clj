@@ -161,4 +161,15 @@
                                           [:status        {:optional true} string?]
                                           [:contact-ids   {:optional true}
                                            [:or string? [:vector string?]]]]}
-                      :responses  {200 {:body string?}}}}]]]]))
+                      :responses  {200 {:body string?}}}}]]]
+     ["/logs"
+      {:middleware [[auth-middleware/wrap-authentication auth-backend]
+                    wrap-login-required]}
+      ["/:id"
+       {:name       ::log
+        :parameters {:path [:map [:id pos-int?]]}
+        :patch      {:handler    log-handlers/update-handler
+                     :parameters {:form [:map [:is-pinned {:optional true} string?]]}
+                     :responses  {200 {:body string?}}}
+        :delete     {:handler   log-handlers/delete-handler
+                     :responses {200 {:body string?}}}}]]]))

@@ -4,6 +4,32 @@
             [lite-crm.logs.views :as views]
             [reitit-extras.core :as ext]))
 
+(defn update-handler
+  "PATCH /logs/:id — toggle pin. Returns updated logs-list fragment."
+  [{:keys [context parameters]
+    router :reitit.core/router}]
+  (let [id        (get-in parameters [:path :id])
+        is-pinned (= "true" (get-in parameters [:form :is-pinned]))
+        log       (queries/get-log (:db context) id)]
+    (queries/toggle-pin! (:db context) id is-pinned)
+    (let [logs (queries/list-logs-by-company (:db context) (:company-id log))]
+      (-> {:router router :logs logs}
+          (views/logs-list-fragment)
+          (ext/render-html)))))
+
+(defn delete-handler
+  "DELETE /logs/:id — delete log. Returns updated logs-list fragment."
+  [{:keys [context parameters]
+    router :reitit.core/router}]
+  (let [id         (get-in parameters [:path :id])
+        log        (queries/get-log (:db context) id)
+        company-id (:company-id log)]
+    (queries/delete-log! (:db context) id)
+    (let [logs (queries/list-logs-by-company (:db context) company-id)]
+      (-> {:router router :logs logs}
+          (views/logs-list-fragment)
+          (ext/render-html)))))
+
 (defn create-handler
   "POST /companies/:id/logs"
   [{:keys [context parameters]

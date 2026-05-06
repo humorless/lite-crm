@@ -2,7 +2,8 @@
   (:require [hickory.core :as hickory]
             [integrant-extras.tests :as ig-extras]
             [lite-crm.db :as db]
-            [lite-crm.server :as server]))
+            [lite-crm.server :as server]
+            [reitit-extras.tests :as reitit-extras]))
 
 (def ^:const TEST-CSRF-TOKEN "test-csrf-token")
 (def ^:const TEST-SECRET-KEY "test-secret-key")
@@ -37,3 +38,18 @@
   "Get the server instance from the test system."
   []
   (::server/server ig-extras/*test-system*))
+
+(defn auth-cookies
+  "Session cookies with user identity — use for GET requests."
+  [user]
+  (reitit-extras/session-cookies
+    {:identity (select-keys user [:id :email])}
+    TEST-SECRET-KEY))
+
+(defn auth-cookies-with-csrf
+  "Session cookies with user identity + CSRF token — use for POST/PATCH/DELETE."
+  [user]
+  (reitit-extras/session-cookies
+    {reitit-extras/CSRF-TOKEN-SESSION-KEY TEST-CSRF-TOKEN
+     :identity (select-keys user [:id :email])}
+    TEST-SECRET-KEY))

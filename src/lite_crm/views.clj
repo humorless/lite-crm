@@ -53,40 +53,39 @@
              props)
    text])
 
-(defn home-page
+(defn nav
+  "Top navigation bar for authenticated pages."
   [{:keys [user router]}]
+  [:nav {:class ["bg-white" "border-b" "border-gray-200" "sticky" "top-0" "z-10"]}
+   [:div {:class ["container" "mx-auto" "px-4" "max-w-6xl" "flex" "items-center"
+                  "justify-between" "h-14"]}
+    [:div {:class ["flex" "gap-6"]}
+     [:a {:class ["font-semibold" "text-gray-800" "hover:text-indigo-600" "text-sm"]
+          :href (ext/get-route router ::routes/home)} "總覽"]
+     [:a {:class ["text-gray-600" "hover:text-indigo-600" "text-sm"]
+          :href (ext/get-route router ::routes/companies)} "公司"]
+     [:a {:class ["text-gray-600" "hover:text-indigo-600" "text-sm"]
+          :href (ext/get-route router ::routes/contacts)} "聯絡人"]
+     [:a {:class ["text-gray-600" "hover:text-indigo-600" "text-sm"]
+          :href (ext/get-route router ::routes/logs)} "聯絡記錄"]]
+    [:div {:class ["flex" "items-center" "gap-4"]}
+     [:span {:class ["text-xs" "text-gray-400"]} (:email user)]
+     [:button {:class ["text-sm" "text-gray-500" "hover:text-red-500" "cursor-pointer"]
+               :hx-post (ext/get-route router ::routes/logout)
+               :hx-headers (ext/csrf-token-json)} "登出"]]]])
+
+(defn layout
+  "Main layout with nav. Use for all authenticated CRM pages."
+  [context content]
   (base
-    ; ========= TODO: Update home page  ========================
-    [:div
-     {:class ["text-slate-800" "min-h-screen" "flex" "flex-col"]}
-     [:nav {:class ["absolute" "top-0" "right-1/4" "p-4"]}
-      (if (some? user)
-        [:div {:class ["flex" "gap-4" "items-center" "justify-center"]}
-         [:p {:class ["text-slate-900" "font-semibold" "mx-auto"]} (:email user)]
-         (button {:url (ext/get-route router ::routes/account)
-                  :text "Account"})
-         (button {:text "Logout"
-                  :url "#"
-                  :props {:hx-post (ext/get-route router ::routes/logout)
-                          :hx-headers (ext/csrf-token-json)}})]
-        [:div {:class ["flex" "gap-4"]}
-         (button {:url (ext/get-route router ::routes/login)
-                  :text "Login"})
-         (button {:url (ext/get-route router ::routes/register)
-                  :text "Register"})])]
-     [:main {:class ["flex-grow" "flex" "items-center" "justify-center"]}
-      [:div {:class ["container" "mx-auto" "px-4" "max-w-4xl" "text-center"]}
-       [:h1 {:class ["text-6xl" "font-bold" "mb-6" "text-slate-900"]} "Welcome to "
-        [:span {:class ["bg-gradient-to-r" "from-emerald-400" "to-sky-400" "bg-clip-text" "text-transparent" "relative"]}
-         "Clojure Stack Lite"]]
-       [:p {:class ["text-2xl" "mb-10" "text-slate-600"]} "A lightweight, modern template to jumpstart your Clojure project"]
-       [:p {:class ["text-lg" "mb-12" "text-slate-500"]}
-        "To begin, modify the existing view in " [:code {:class ["bg-slate-100" "px-1" "rounded"]} "src/lite-crm/views/home.clj"]
-        " or add a new route in " [:code {:class ["bg-slate-100" "px-1" "rounded"]} "src/lite-crm/routes.clj"]
-        " and define a handler in " [:code {:class ["bg-slate-100" "px-1" "rounded"]} "src/lite-crm/handlers.clj"]]
-       [:div {:class ["mb-16"]}
-        [:a {:class ["bg-slate-900" "hover:bg-slate-800" "text-white" "font-medium" "py-3" "px-8" "rounded-lg" "transition-colors" "duration-200" "mr-4"]
-             :href "https://stack.bogoyavlensky.com/docs/lite/tutorial"
-             :target "_blank"} "Get Started"]]]]
-     [:footer {:class ["py-6" "text-center" "text-sm" "text-slate-500"]}
-      [:p "Made with ❤️ for the Clojure community"]]]))
+    [:div {:class ["min-h-screen" "bg-gray-50"]}
+     (nav context)
+     [:main {:class ["container" "mx-auto" "px-4" "py-6" "max-w-6xl"]}
+      content]]))
+
+(defn home-page
+  [context]
+  (layout context
+    [:div {:class ["py-10" "text-center"]}
+     [:h1 {:class ["text-2xl" "font-bold" "text-gray-700"]} "CRM 總覽"]
+     [:p {:class ["text-gray-400" "mt-2" "text-sm"]} "Dashboard 即將建置"]]))

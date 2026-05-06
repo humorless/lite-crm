@@ -12,8 +12,8 @@
 
 (defn home-handler
   [{router :reitit.core/router
-    :as request}]
-  (-> {:user (:identity request)
-       :router router}
+    user   :identity
+    :as    _request}]
+  (-> {:user user :router router}
       (views/home-page)
       (reitit-extras/render-html)))

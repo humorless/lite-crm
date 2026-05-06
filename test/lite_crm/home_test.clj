@@ -3,9 +3,9 @@
             [clojure.test :refer :all]
             [hickory.select :as select]
             [integrant-extras.tests :as ig-extras]
-            [reitit-extras.tests :as reitit-extras]
-            [lite-crm.server :as-alias server]
-            [lite-crm.test-utils :as test-utils]))
+            [lite-crm.auth.queries :as queries]
+            [lite-crm.test-utils :as test-utils]
+            [reitit-extras.tests :as reitit-extras]))
 
 (use-fixtures :once
   (ig-extras/with-system))
@@ -14,11 +14,11 @@
   test-utils/with-truncated-tables)
 
 (deftest test-home-page-is-loaded-correctly
-  (let [url (reitit-extras/get-server-url (test-utils/server) :host)
-        body (test-utils/response->hickory (http/get url))]
-    (is (= "Clojure Stack Lite"
+  (let [url  (reitit-extras/get-server-url (test-utils/server) :host)
+        user (queries/create-user! (test-utils/db) {:email "u@t.com" :password "password123"})
+        body (test-utils/response->hickory
+               (http/get url {:cookies (test-utils/auth-cookies user)}))]
+    (is (= "CRM 總覽"
            (->> body
-                (select/select (select/tag :span))
-                (first)
-                :content
-                (first))))))
+                (select/select (select/tag :h1))
+                first :content first)))))

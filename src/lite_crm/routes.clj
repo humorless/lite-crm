@@ -5,6 +5,7 @@
             [lite-crm.auth.handlers :as auth-handlers]
             [lite-crm.auth.spec :as spec]
             [lite-crm.companies.handlers :as company-handlers]
+            [lite-crm.contacts.handlers :as contact-handlers]
             [lite-crm.handlers :as handlers]
             [lite-crm.logs.handlers :as log-handlers]
             [reitit-extras.core :as ext]
@@ -162,6 +163,45 @@
                                           [:contact-ids   {:optional true}
                                            [:or string? [:vector string?]]]]}
                       :responses  {200 {:body string?}}}}]]]
+     ["/contacts"
+      {:middleware [[auth-middleware/wrap-authentication auth-backend] wrap-login-required]}
+      [""  {:name ::contacts
+            :get  {:handler   contact-handlers/list-handler
+                   :responses {200 {:body string?}}}
+            :post {:handler    contact-handlers/create-handler
+                   :parameters {:form [:map
+                                       [:name       [:string {:min 1}]]
+                                       [:company-id {:optional true} string?]
+                                       [:department {:optional true} string?]
+                                       [:title      {:optional true} string?]
+                                       [:phone      {:optional true} string?]
+                                       [:phone-ext  {:optional true} string?]
+                                       [:mobile     {:optional true} string?]
+                                       [:email      {:optional true} string?]
+                                       [:notes      {:optional true} string?]]}
+                   :responses  {302 {:body string?}}}}]
+      ["/new" {:name        ::contacts-new
+               :conflicting true
+               :get         {:handler   contact-handlers/new-handler
+                             :responses {200 {:body string?}}}}]
+      ["/:id"
+       {:conflicting true
+        :parameters  {:path [:map [:id pos-int?]]}}
+       ["" {:name  ::contact
+            :get   {:handler   contact-handlers/detail-handler
+                    :responses {200 {:body string?}}}
+            :patch {:handler    contact-handlers/update-handler
+                    :parameters {:form [:map
+                                        [:name       {:optional true} [:string {:min 1}]]
+                                        [:company-id {:optional true} string?]
+                                        [:department {:optional true} string?]
+                                        [:title      {:optional true} string?]
+                                        [:phone      {:optional true} string?]
+                                        [:phone-ext  {:optional true} string?]
+                                        [:mobile     {:optional true} string?]
+                                        [:email      {:optional true} string?]
+                                        [:notes      {:optional true} string?]]}
+                    :responses  {200 {:body string?}}}}]]]
      ["/logs"
       {:middleware [[auth-middleware/wrap-authentication auth-backend]
                     wrap-login-required]}

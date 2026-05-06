@@ -2,6 +2,8 @@
   "HTTP handlers for companies list, create, and detail."
   (:require [lite-crm.companies.queries :as queries]
             [lite-crm.companies.views :as views]
+            [lite-crm.contacts.queries :as contact-queries]
+            [lite-crm.contacts.views :as contact-views]
             [lite-crm.logs.queries :as log-queries]
             [lite-crm.logs.views :as log-views]
             [lite-crm.routes :as-alias routes]
@@ -73,6 +75,12 @@
         (-> {:router router :company company
              :addresses addresses :phones phones :editing? editing?}
             (views/info-tab-content)
+            (ext/render-html)))
+      "contacts"
+      (let [contacts (contact-queries/list-contacts-by-company (:db context) id)
+            company  (queries/get-company (:db context) id)]
+        (-> {:router router :company company :contacts contacts}
+            (contact-views/company-contacts-tab)
             (ext/render-html)))
       "logs"
       (let [logs    (log-queries/list-logs-by-company (:db context) id)

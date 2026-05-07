@@ -29,9 +29,13 @@
   [:div
    [:div {:class ["flex" "justify-between" "items-center" "mb-4"]}
     [:h1 {:class ["text-2xl" "font-bold" "text-gray-800"]} "公司列表"]
-    [:a {:class ["bg-indigo-600" "text-white" "px-4" "py-2" "rounded-lg"
-                 "hover:bg-indigo-700" "text-sm" "font-medium"]
-         :href (ext/get-route router ::routes/new-company)} "+ 新增公司"]]
+    [:div {:class ["flex" "gap-2"]}
+     [:a {:class ["border" "border-indigo-300" "text-indigo-600" "px-4" "py-2" "rounded-lg"
+                  "text-sm" "font-medium" "hover:bg-indigo-50"]
+          :href (str (ext/get-route router ::routes/companies) "/import")} "匯入 CSV"]
+     [:a {:class ["bg-indigo-600" "text-white" "px-4" "py-2" "rounded-lg"
+                  "hover:bg-indigo-700" "text-sm" "font-medium"]
+          :href (ext/get-route router ::routes/new-company)} "+ 新增公司"]]]
    [:form {:class ["flex" "gap-3" "mb-4"] :method "get"
            :action (ext/get-route router ::routes/companies)}
     [:select {:class ["border" "border-gray-300" "rounded-lg" "px-3" "py-2" "text-sm"

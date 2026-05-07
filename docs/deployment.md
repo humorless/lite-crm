@@ -6,7 +6,7 @@
 
 ## 取得 jar 檔
 
-從 [GitHub Releases](../../releases) 下載最新的 `standalone.jar`。
+從 [GitHub Releases](../../../releases) 下載最新的 `standalone.jar`。
 
 或自行從原始碼 build：
 
@@ -85,6 +85,16 @@ sqlite3 /var/lib/crm/crm.db ".backup /backup/crm-$(date +%Y%m%d).db"
 # crontab -e
 0 3 * * * sqlite3 /var/lib/crm/crm.db ".backup /backup/crm-$(date +\%Y\%m\%d).db"
 ```
+
+### 進階：使用 Litestream 做連續備份（選用）
+
+若需要更短的資料遺失窗口（RPO 分鐘級），可考慮 [Litestream](https://litestream.io/)。它會在背景持續將 SQLite WAL 複寫到 S3、GCS 或其他物件儲存，不需要停機，也不影響寫入一致性。
+
+適合場景：
+- 生產環境資料量大、每日備份的遺失窗口無法接受
+- 已有 S3/GCS bucket 可用
+
+詳細設定請參考 [Litestream 官方文件](https://litestream.io/getting-started/)。
 
 ## 升級版本
 

@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/cache-clojure-deps
+        with:
+          key-label: "build"
+
+      - uses: jdx/mise-action@v2
+        with:
+          install_args: "babashka java clojure tailwindcss"
+
+      - name: Build uberjar
+        run: bb deps && bb build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/standalone.jar
+          generate_release_notes: true

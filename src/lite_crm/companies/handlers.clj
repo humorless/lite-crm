@@ -1,6 +1,10 @@
 (ns lite-crm.companies.handlers
   "HTTP handlers for companies list, create, and detail."
-  (:require [lite-crm.companies.queries :as queries]
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]
+            [jsonista.core :as json]
+            [lite-crm.companies.import :as csv-import]
+            [lite-crm.companies.queries :as queries]
             [lite-crm.companies.views :as views]
             [lite-crm.contacts.queries :as contact-queries]
             [lite-crm.contacts.views :as contact-views]
@@ -140,6 +144,48 @@
       (-> {:router router :company company :phones phones}
           (views/phones-section)
           (ext/render-html)))))
+
+(defn import-page-handler
+  [{user   :identity
+    router :reitit.core/router}]
+  (-> {:user user :router router}
+      (views/import-page)
+      (ext/render-html)))
+
+(defn import-preview-handler
+  "POST /companies/import — parse CSV multipart upload, return preview fragment."
+  [{:keys [parameters multipart-params]
+    router :reitit.core/router}]
+  (let [file-part    (or (get-in parameters [:multipart :csv-file])
+                         (get multipart-params "csv-file"))
+        input-stream (cond
+                       (string? file-part)   (io/input-stream (.getBytes ^String file-part "UTF-8"))
+                       (:stream file-part)   (:stream file-part)
+                       (:tempfile file-part) (io/input-stream (:tempfile file-part)))
+        {:keys [headers rows]} (csv-import/parse-csv-stream input-stream)
+        preview-rows (take 5 rows)
+        all-maps     (->> rows
+                          (keep (fn [row]
+                                  (let [name-v (str/trim (first row))]
+                                    (when (seq name-v)
+                                      {"name"     name-v
+                                       "industry" (not-empty (str/trim (nth row 1 "")))
+                                       "tier"     (not-empty (str/trim (nth row 2 "")))}))))
+                          (vec))
+        rows-json    (json/write-value-as-string all-maps)]
+    (-> {:router router :headers headers :preview-rows preview-rows :rows-json rows-json}
+        (views/import-preview-fragment)
+        (ext/render-html))))
+
+(defn import-confirm-handler
+  "POST /companies/import/confirm — decode rows JSON and insert companies."
+  [{:keys [context parameters]}]
+  (let [rows-json  (get-in parameters [:form :rows-json])
+        raw-maps   (csv-import/rows-json->company-maps rows-json)
+        result     (csv-import/do-import! (:db context) raw-maps)]
+    (-> result
+        (views/import-result-fragment)
+        (ext/render-html))))
 
 (defn update-handler
   "PATCH /companies/:id — updates info fields, returns info tab content."

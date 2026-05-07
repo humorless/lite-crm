@@ -110,6 +110,23 @@
                :conflicting true
                :get         {:handler   company-handlers/new-handler
                              :responses {200 {:body string?}}}}]
+      ["/import"
+       [""  {:name        ::companies-import
+             :conflicting true
+             :get         {:handler   company-handlers/import-page-handler
+                           :responses {200 {:body string?}}}
+             :post        {:handler    company-handlers/import-preview-handler
+                           :parameters {:multipart [:map [:csv-file any?]]}
+                           :responses  {200 {:body string?}}}}]
+       ["/confirm"
+        {:name    ::companies-import-confirm
+         :post    {:handler    company-handlers/import-confirm-handler
+                   :parameters {:form [:map
+                                       [:rows-json [:string {:min 1}]]
+                                       [:name-col      {:optional true} string?]
+                                       [:industry-col  {:optional true} string?]
+                                       [:tier-col      {:optional true} string?]]}
+                   :responses  {200 {:body string?}}}}]]
       ["/:id"
        {:conflicting true
         :parameters  {:path [:map [:id pos-int?]]}}

@@ -42,6 +42,11 @@
   [db id]
   (db/exec-one! db {:select [:*] :from [:company] :where [:= :id id]}))
 
+(defn get-company-by-name
+  "Return company with exact name match, or nil."
+  [db company-name]
+  (db/exec-one! db {:select [:id :name] :from [:company] :where [:= :name company-name]}))
+
 (defn update-company!
   "Update company fields. Returns updated row."
   [db id {:keys [industry tier notes] company-name :name}]

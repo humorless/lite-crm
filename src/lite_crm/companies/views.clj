@@ -287,3 +287,87 @@
      (tab-nav {:router router :company company})
      [:div {:id "tab-content"}
       (info-tab-content (assoc data :editing? false))]]))
+
+(defn import-page
+  "Full page: CSV upload form."
+  [{:keys [router] :as data}]
+  (base/layout data
+    [:div {:class ["max-w-2xl" "mx-auto"]}
+     [:div {:class ["flex" "items-center" "gap-3" "mb-6"]}
+      [:a {:class ["text-sm" "text-gray-400" "hover:text-gray-600"]
+           :href (ext/get-route router ::routes/companies)} "← 公司列表"]
+      [:h1 {:class ["text-2xl" "font-bold" "text-gray-800"]} "匯入公司（CSV）"]]
+     [:div {:class ["bg-white" "rounded-lg" "shadow" "p-6"]}
+      [:p {:class ["text-sm" "text-gray-600" "mb-4"]}
+       "上傳 CSV 檔案。第一列須為標題列（header row）。支援的欄位：公司名稱（必填）、產業、客戶等級。"]
+      [:p {:class ["text-xs" "text-gray-400" "mb-6"]}
+       "客戶等級可填入：" [:code "has_plan"] "（有規劃）、" [:code "has_need"] "（有需求）、"
+       [:code "no_plan"] "（沒規劃）、" [:code "abandoned"] "（放棄）。無效值視為「沒規劃」。"]
+      [:form {:class ["space-y-4"]
+              :hx-post     (str (ext/get-route router ::routes/companies) "/import")
+              :hx-target   "#import-result"
+              :hx-swap     "innerHTML"
+              :hx-encoding "multipart/form-data"}
+       (ext/csrf-token-html)
+       [:div
+        [:label {:class ["block" "text-sm" "font-medium" "text-gray-700" "mb-1"]} "選擇 CSV 檔案"]
+        [:input {:class ["block" "w-full" "text-sm" "text-gray-500"
+                         "file:mr-4" "file:py-2" "file:px-4"
+                         "file:rounded" "file:border-0"
+                         "file:text-sm" "file:font-medium"
+                         "file:bg-indigo-50" "file:text-indigo-700"
+                         "hover:file:bg-indigo-100"]
+                 :type "file" :name "csv-file" :accept ".csv" :required true}]]
+       [:button {:class ["bg-indigo-600" "text-white" "px-4" "py-2" "rounded" "text-sm"
+                         "hover:bg-indigo-700"] :type "submit"} "上傳並預覽"]]
+      [:div {:id "import-result" :class ["mt-6"]}]]]))
+
+(defn import-preview-fragment
+  "Preview fragment returned after upload. Shows first 5 rows + column mapping."
+  [{:keys [router headers preview-rows rows-json]}]
+  [:div
+   [:h3 {:class ["text-sm" "font-semibold" "text-gray-700" "mb-3"]}
+    "預覽（前 5 列）及欄位對應"]
+   [:div {:class ["grid" "grid-cols-3" "gap-4" "mb-4"]}
+    (for [[field label] [["name-col" "公司名稱 *"] ["industry-col" "產業"] ["tier-col" "客戶等級"]]]
+      [:div
+       [:label {:class ["block" "text-xs" "text-gray-500" "mb-1"]} label]
+       [:select {:class ["w-full" "border" "border-gray-300" "rounded" "px-2" "py-1" "text-sm"]
+                 :form "confirm-form" :name field}
+        [:option {:value ""} "（不匯入）"]
+        (map-indexed
+          (fn [i h]
+            [:option {:value i :selected (= h label)} h])
+          headers)]])]
+   [:div {:class ["overflow-x-auto" "mb-4"]}
+    [:table {:class ["min-w-full" "text-xs"]}
+     [:thead {:class ["bg-gray-50"]}
+      [:tr (for [h headers]
+             [:th {:class ["px-3" "py-2" "text-left" "font-medium" "text-gray-500"]} h])]]
+     [:tbody {:class ["divide-y" "divide-gray-100"]}
+      (for [row preview-rows]
+        [:tr (for [cell row]
+               [:td {:class ["px-3" "py-2" "text-gray-700"]} cell])])]]]
+   [:form {:id "confirm-form"
+           :hx-post (str (ext/get-route router ::routes/companies) "/import/confirm")
+           :hx-target "#import-result"
+           :hx-swap "innerHTML"}
+    (ext/csrf-token-html)
+    [:input {:type "hidden" :name "rows-json" :value rows-json}]
+    [:div {:class ["flex" "gap-3"]}
+     [:button {:class ["bg-indigo-600" "text-white" "px-4" "py-2" "rounded" "text-sm"
+                       "hover:bg-indigo-700"] :type "submit"} "確認匯入"]
+     [:button {:class ["border" "border-gray-300" "text-gray-600" "px-4" "py-2" "rounded"
+                       "text-sm" "hover:bg-gray-50"]
+               :type "button"
+               :hx-get (str (ext/get-route router ::routes/companies) "/import")
+               :hx-target "body"
+               :hx-push-url "true"} "取消"]]]])
+
+(defn import-result-fragment
+  "Result fragment returned after confirm import."
+  [{:keys [inserted skipped]}]
+  [:div {:class ["rounded-lg" "border" "border-green-200" "bg-green-50" "p-4"]}
+   [:p {:class ["text-sm" "text-green-700" "font-medium"]} "匯入完成"]
+   [:p {:class ["text-sm" "text-green-600" "mt-1"]}
+    (str inserted " 筆新增，" skipped " 筆略過（名稱重複）")]])

@@ -220,7 +220,10 @@
                                         [:mobile     {:optional true} string?]
                                         [:email      {:optional true} string?]
                                         [:notes      {:optional true} string?]]}
-                    :responses  {200 {:body string?}}}}]]]
+                    :responses  {200 {:body string?}}}}]
+       ["/vcard" {:name ::contact-vcard
+                  :get  {:handler   contact-handlers/vcard-handler
+                         :responses {200 {:body string?}}}}]]]
      ["/tags"
       {:middleware [[auth-middleware/wrap-authentication auth-backend] wrap-login-required]}
       [""  {:name ::tags

@@ -1,6 +1,7 @@
 (ns lite-crm.contacts.handlers
   "HTTP handlers for contacts list, create, and detail."
-  (:require [lite-crm.companies.queries :as company-queries]
+  (:require [clojure.string :as str]
+            [lite-crm.companies.queries :as company-queries]
             [lite-crm.contacts.queries :as queries]
             [lite-crm.contacts.views :as views]
             [lite-crm.tags.handlers :as tag-handlers]
@@ -70,6 +71,33 @@
            :tags-section tags-section}
           (views/contact-page)
           (ext/render-html)))))
+
+(defn- format-vcard
+  [{contact-name :name
+    :keys [company-name title phone mobile email department]}]
+  (let [org-line (when company-name
+                   (if department
+                     (str "ORG:" company-name ";" department)
+                     (str "ORG:" company-name)))
+        lines    (cond-> ["BEGIN:VCARD" "VERSION:3.0" (str "FN:" (or contact-name ""))]
+                   org-line (conj org-line)
+                   title    (conj (str "TITLE:" title))
+                   phone    (conj (str "TEL;TYPE=WORK,VOICE:" phone))
+                   mobile   (conj (str "TEL;TYPE=CELL,VOICE:" mobile))
+                   email    (conj (str "EMAIL;TYPE=WORK:" email)))]
+    (str (str/join "\r\n" (conj (vec lines) "END:VCARD")) "\r\n")))
+
+(defn vcard-handler
+  "GET /contacts/:id/vcard — download contact as vCard 3.0."
+  [{:keys [context parameters]}]
+  (let [id      (get-in parameters [:path :id])
+        contact (queries/get-contact (:db context) id)]
+    (if (nil? contact)
+      (response/not-found "Contact not found")
+      (-> (response/response (format-vcard contact))
+          (response/content-type "text/vcard; charset=UTF-8")
+          (response/header "Content-Disposition"
+                           (str "attachment; filename=\"" (:name contact) ".vcf\""))))))
 
 (defn update-handler
   [{:keys [context parameters errors]

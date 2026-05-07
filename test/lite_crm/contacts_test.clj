@@ -1,5 +1,6 @@
 (ns lite-crm.contacts-test
   (:require [clj-http.client :as http]
+            [clojure.string :as str]
             [clojure.test :refer :all]
             [hickory.select :as select]
             [integrant-extras.tests :as ig-extras]
@@ -47,3 +48,21 @@
                                                 :name "新名字" :title "總監"}})]
     (is (= 200 (:status response)))
     (is (= "新名字" (:name (contact-queries/get-contact (utils/db) (:id contact)))))))
+
+(deftest test-vcard-requires-auth
+  (let [contact (contact-queries/create-contact! (utils/db) {:name "王小明"})
+        url     (str (reitit-extras/get-server-url (utils/server)) "/contacts/" (:id contact) "/vcard")
+        response (http/get url {:redirect-strategy :none})]
+    (is (= 302 (:status response)))))
+
+(deftest test-vcard-export
+  (let [user    (auth-queries/create-user! (utils/db) {:email "u@t.com" :password "password123"})
+        contact (contact-queries/create-contact! (utils/db) {:name "王小明" :title "業務經理"
+                                                              :email "wang@tsmc.com" :phone "02-1234"})
+        url     (str (reitit-extras/get-server-url (utils/server)) "/contacts/" (:id contact) "/vcard")
+        response (http/get url {:cookies (utils/auth-cookies user)})]
+    (is (= 200 (:status response)))
+    (is (str/includes? (get-in response [:headers "content-type"]) "text/vcard"))
+    (is (str/includes? (:body response) "FN:王小明"))
+    (is (str/includes? (:body response) "TITLE:業務經理"))
+    (is (str/includes? (:body response) "EMAIL;TYPE=WORK:wang@tsmc.com"))))

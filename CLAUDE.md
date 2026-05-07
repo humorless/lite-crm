@@ -35,7 +35,7 @@ tmux send-keys -t drepl:0 '(reset)' Enter
 tmux capture-pane -t drepl:0 -p
 ```
 
-If the session is not running, start it with the `drepl` shell alias (opens `bb clj-repl` in a new tmux session).
+If the session is not running, start it with the `drepl` shell alias (opens `clj -M:nrepl:dev:test` in a new tmux session).
 
 ## Architecture
 

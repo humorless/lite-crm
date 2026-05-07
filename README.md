@@ -98,4 +98,4 @@ bb test
 
 ## 部署
 
-參考 [Kamal 部署文件](https://stack.bogoyavlensky.com/docs/lite/kamal)。
+→ **[部署指南](docs/deployment.md)**（環境變數設定、systemd 服務、DB 備份、升級流程）

@@ -1,10 +1,11 @@
 {:lite-crm.db/db
  {:jdbc-url #profile {:default "jdbc:sqlite:db/lite-crm.sqlite"
-                      :test "jdbc:sqlite::memory:"}}
+                      :prod    #join ["jdbc:sqlite:" #env DB_PATH]
+                      :test    "jdbc:sqlite::memory:"}}
 
  :lite-crm.server/server
  {:options {:port #profile {:default 8000
-                            :prod 80
+                            :prod    #long #env PORT
                             :test #free-port true}
             :session-secret-key #profile {:default "test-secret-key"
                                           :prod #env SESSION_SECRET_KEY}
